@@ -66,8 +66,9 @@ where n is the number of input_pegs and k is the size of the vertex cover
 """
 
 match_found = False
+candidate_pegs = []
 # while not match_found:
-c, m = 0, 0
+c, m, v = 0, 0, 0
 while not match_found:
     try:
         # use iterator, so you can always carry on where you left off
@@ -82,10 +83,18 @@ while not match_found:
         c += 1
         if not intersection:
             m += 1
+
+            # DPP - only compute candidates when necessary and store result
+            if not candidate_pegs:
+                v += 1
+                candidate_pegs = methods.get_candidate_pegs(input_pegs, cover_pegs)
+
             target_pegs = methods.get_targets(difference, cube_values)
-        #     match_pegs, match_transforms = methods.get_matches(target_pegs, input_pegs)
+            match_pegs, match_transforms = methods.get_matches(target_pegs, candidate_pegs)
+
+    candidate_pegs = []
         #     if match_pegs:
         #         print('solution found!')
         #         match_found = True
 
-print(c, m)
+print(c, m, v)

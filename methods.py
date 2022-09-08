@@ -113,28 +113,23 @@ def evaluate(nodes: List[chr], pegs: Tuple[chr, ...], transforms: Tuple[Tuple[in
     return intersection, cv
 
 
-def clear_nones(target_peg: List[List[any]]) -> Dict[int, Dict[int, int]]:
-    peg = dict(dict())
-    for i in range(4):
-        for j in range(3):
-            if not target_peg[i][j]:
-                continue
-            depths = peg.get(i, {})
-            depths[j] = target_peg[i][j]
-            peg.update({i: depths})
-
-    return peg
+def update_target_peg(target_peg, side, depth, target):
+    depths = target_peg.get(side, {})
+    depths[depth] = target
+    target_peg.update({side: depths})
+    return target_peg
 
 
 def get_targets(nodes, cube_values):
     # returns a list of target pegs based on the inverse of each occupied node
-    target_pegs = []
+    target_pegs = {}
     half_cut_piece = False
     for from_node in nodes:
-        # 2 target pegs in case we encounter half_cut_piece
+        target_pegs_of_node = []
 
-        target_peg1 = [[None for _ in range(3)] for _ in range(4)]
-        target_peg2 = [[None for _ in range(3)] for _ in range(4)]
+        # 2 target pegs in case we encounter half_cut_piece
+        target_peg1 = dict(dict())
+        target_peg2 = dict(dict())
 
         for to_node in cube_values[from_node]:
             # ignores already solved interactions
@@ -150,28 +145,78 @@ def get_targets(nodes, cube_values):
                 if target == 0:
                     # now every change that is done to the target peg is to be duplicated
                     half_cut_piece = True
-                    target_peg1[side][depth] = -1
-                    target_peg2[side][depth] = 0.5
+
+                    update_target_peg(target_peg1, side, depth, -1)
+                    update_target_peg(target_peg2, side, depth, 0.5)
+
                 else:
-                    target_peg1[side][depth] = target
+                    update_target_peg(target_peg1, side, depth, target)
 
                 if half_cut_piece and target != 0:
-                    target_peg1[side][depth] = target
-                    target_peg2[side][depth] = target
 
-        # Remove None before appending and convert to dict
-        target_peg1 = clear_nones(target_peg1)
-        target_pegs.append(target_peg1)
+                    update_target_peg(target_peg1, side, depth, target)
+                    update_target_peg(target_peg2, side, depth, target)
 
+        target_pegs_of_node.append(target_peg1)
         if half_cut_piece:
-            target_peg2 = clear_nones(target_peg2)
-            target_pegs.append(target_peg2)
+            target_pegs_of_node.append(target_peg2)
             half_cut_piece = False
+
+        target_pegs[from_node] = target_pegs_of_node
 
     return target_pegs
 
 
+def get_candidate_pegs(input_pegs, cover_pegs):
+
+    # Another Leetcode-y question
+    # Use a bit vector to find intersection of pegs
+    bit_vector = {peg: 0 for peg in set(input_pegs)}
+    for peg in input_pegs:
+        bit_vector[peg] += 1
+    for peg in cover_pegs:
+        bit_vector[peg] -= 1
+
+    candidates = [0] * (len(input_pegs) - len(cover_pegs))
+    k = 0
+    for peg in bit_vector:
+        if bit_vector[peg] > 0:
+            for j in range(bit_vector[peg]):
+                candidates[k] = peg
+                k += 1
+
+    return candidates
+
+
+def get_matches(target_pegs: Dict[chr, Dict[int, Dict[int, int]]], candidate_pegs):
+    """
+    Searches through candidate pegs to match targets
+
+    TODO: Target pegs can be identical, so store results of previous
+     searches and check whether the target peg has already been searched for
+
+    :param target_pegs:
+    :return :
+    """
+
+    print(target_pegs)
+    print(candidate_pegs)
+    target_labels = dict()
+    i = 0
+    for node in target_pegs:
+        for tp in target_pegs[node]:
+            result = target_labels.get(i, {})
+            if not result:
+                target_labels[i] = tp
+                i += 1
+
+
+
+    return None, None
+
+
 if __name__ == '__main__':
+
     nds = ['A', 'B', 'C', 'D', 'E', 'F']
 
     update_cube_map(nds)
