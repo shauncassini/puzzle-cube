@@ -4,55 +4,60 @@ from typing import List, Dict, Tuple, Union
 T, R, B, L = 0, 1, 2, 3
 D0, D1, D2 = 0, 1, 2
 
-CubeMapType = Dict[chr, Dict[chr, Tuple[Tuple[int, int], Tuple[int, int]]]]
+CubeMapType = Dict[chr, Dict[chr, Tuple[int, int]]]
 PiecesType = Dict[int, Dict[int, Tuple[float, float, float]]]
 
 # From Hole -> To hole ->
-# ((From Side, From Depth), (To Side, To Depth)
+# (Side, Depth)
 CubeMap: CubeMapType = {
     'A': {
-        'E': ((B, D0), (T, D2)),
-        'F': ((B, D2), (T, D2)),
-        'G': ((R, D1), (T, D2))
+        'E': (B, D0),
+        'F': (B, D2),
+        'G': (R, D1),
     },
     'B': {
-        'E': ((B, D0), (T, D0)),
-        'F': ((B, D2), (T, D0)),
-        'G': ((L, D1), (B, D0))
+        'E': (B, D0),
+        'F': (B, D2),
+        'G': (L, D1),
     },
     'C': {
-        'E': ((T, D0), (B, D2)),
-        'F': ((T, D2), (B, D2)),
-        'G': ((R, D1), (T, D0))
+        'E': (T, D0),
+        'F': (T, D2),
+        'G': (R, D1),
     },
     'D': {
-        'E': ((T, D0), (B, D0)),
-        'F': ((T, D2), (B, D0)),
-        'G': ((L, D1), (B, D2))
+        'E': (T, D0),
+        'F': (T, D2),
+        'G': (L, D1),
     },
     'E': {
-        'A': ((T, D2), (B, D0)),
-        'B': ((T, D0), (B, D0)),
-        'C': ((B, D2), (T, D0)),
-        'D': ((B, D0), (T, D0)),
-        'G': ((R, D1), (R, D1))
+        'A': (T, D2),
+        'B': (T, D0),
+        'C': (B, D2),
+        'D': (B, D0),
+        'G': (R, D1),
     },
     'F': {
-        'A': ((T, D2), (B, D2)),
-        'B': ((T, D0), (B, D2)),
-        'C': ((B, D2), (T, D2)),
-        'D': ((B, D0), (T, D2)),
-        'G': ((L, D1), (L, D1))
+        'A': (T, D2),
+        'B': (T, D0),
+        'C': (B, D2),
+        'D': (B, D0),
+        'G': (L, D1),
     },
     'G': {
-        'A': ((T, D2), (R, D1)),
-        'B': ((L, D0), (L, D1)),
-        'C': ((T, D0), (R, D1)),
-        'D': ((L, D2), (L, D1)),
-        'E': ((R, D1), (R, D1)),
-        'F': ((L, D1), (L, D1))
+        'A': (T, D2),
+        'B': (L, D0),
+        'C': (T, D0),
+        'D': (L, D2),
+        'E': (R, D1),
+        'F': (L, D1),
     }
 }
+
+CubeValues = {
+    from_node: {to_node: 0 for to_node in CubeMap[from_node]} for from_node in CubeMap
+}
+
 # Piece number -> side -> depths (0, 1, 2)
 Pieces: PiecesType = {x: {T: (), R: (), B: (), L: ()} for x in range(1, 18)}
 
@@ -74,7 +79,7 @@ with open('pieces.csv') as f:
     f.close()
 
 
-def get_edge(a: chr, b: chr) -> Union[Tuple[Tuple[int, int], Tuple[int, int]], bool]:
+def get_edge(a: chr, b: chr) -> Union[Tuple[int, int], bool]:
     try:
         first_node = CubeMap[a]
     except KeyError:
