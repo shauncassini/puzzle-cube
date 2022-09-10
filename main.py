@@ -68,7 +68,7 @@ where n is the number of input_pegs and k is the size of the vertex cover
 match_found = False
 candidate_pegs = []
 # while not match_found:
-c, m, v = 0, 0, 0
+c, m, v, match_cand = 0, 0, 0, 0
 while not match_found:
     try:
         # use iterator, so you can always carry on where you left off
@@ -90,11 +90,17 @@ while not match_found:
                 candidate_pegs = methods.get_candidate_pegs(input_pegs, cover_pegs)
 
             target_pegs = methods.get_targets(difference, cube_values)
-            match_pegs, match_transforms = methods.get_matches(target_pegs, candidate_pegs)
+            match_sets, match_transforms = methods.get_matches(target_pegs, candidate_pegs)
+
+            # check for subset splitting
+            if len(match_sets) == len(difference):
+                print(match_sets, candidate_pegs)
+                match_subsets = methods.get_match_subsets(match_sets)
+
 
     candidate_pegs = []
         #     if match_pegs:
         #         print('solution found!')
         #         match_found = True
 
-print(c, m, v)
+print(c, m, v, match_cand)

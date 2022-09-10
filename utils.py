@@ -100,3 +100,8 @@ def get_piece(p: int) -> Dict[int, Tuple[float, float, float]]:
         return Pieces[p]
     except KeyError:
         print(f'Invalid piece: {p}')
+
+
+class Hashabledict(dict):
+    def __hash__(self):
+        return hash(frozenset(self))

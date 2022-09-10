@@ -55,42 +55,34 @@ def vertex_cover(graph: Dict[chr, List[chr]]) -> List[chr]:
 
 def apply_transform(node, transform_r, transform_f):
     r, f = node
-
     # rotating is modular arithmetic
     r_t = (r + transform_r) % 4
-
     # flipping swaps depth 0 and 2
     f_t = f
     if f == 0 and transform_f == 1:
         f_t = 2
     elif f == 2 and transform_f == 1:
         f_t = 0
-
     return r_t, f_t
 
 
 def evaluate(nodes: List[chr], pegs: Tuple[chr, ...], transforms: Tuple[Tuple[int, ...], Tuple[int, ...]]):
-
     # empty cube values (because it is constantly being referenced to)
     # slightly better than deepcopy, as it only accesses the necessary nodes
     cv = CubeValues
     for from_n in nodes:
         for to_n in cv[from_n]:
             cv[from_n][to_n] = 0
-
     # each peg has a transform
     rotations, flips = transforms
     # compute intersections
     intersection = False
-
     for i in range(len(nodes)):
-
         if intersection:
             break
 
         from_node = nodes[i]
         peg = utils.get_piece(pegs[i])
-
         rotation = rotations[i]
         flip = flips[i]
 
@@ -125,7 +117,6 @@ def get_targets(nodes, cube_values):
     target_pegs = {}
     half_cut_piece = False
     for from_node in nodes:
-        target_pegs_of_node = []
 
         # 2 target pegs in case we encounter half_cut_piece
         target_peg1 = dict(dict())
@@ -145,7 +136,6 @@ def get_targets(nodes, cube_values):
                 if target == 0:
                     # now every change that is done to the target peg is to be duplicated
                     half_cut_piece = True
-
                     update_target_peg(target_peg1, side, depth, -1)
                     update_target_peg(target_peg2, side, depth, 0.5)
 
@@ -153,21 +143,33 @@ def get_targets(nodes, cube_values):
                     update_target_peg(target_peg1, side, depth, target)
 
                 if half_cut_piece and target != 0:
-
                     update_target_peg(target_peg1, side, depth, target)
                     update_target_peg(target_peg2, side, depth, target)
 
-        target_pegs_of_node.append(target_peg1)
-        if half_cut_piece:
-            target_pegs_of_node.append(target_peg2)
-            half_cut_piece = False
+        target_peg1 = utils.Hashabledict(target_peg1)
+        target_peg1_nodes = target_pegs.get(target_peg1, [])
 
-        target_pegs[from_node] = target_pegs_of_node
+        if not target_peg1_nodes:
+            target_pegs[target_peg1] = target_peg1_nodes
+
+        target_peg1_nodes.append(from_node)
+
+        if half_cut_piece:
+            target_peg2 = utils.Hashabledict(target_peg2)
+            target_peg2_nodes = target_pegs.get(target_peg2, [])
+            target_peg2_nodes.append(from_node)
+
+            if not target_peg2_nodes:
+                target_pegs[target_peg2] = target_peg2_nodes
+
+            half_cut_piece = False
 
     return target_pegs
 
 
 def get_candidate_pegs(input_pegs, cover_pegs):
+    # given [1, 1, 2, 3] and [1, 2]: returns [1, 3]
+    # i.e. in this context returns the inverse of the vertex cover
 
     # Another Leetcode-y question
     # Use a bit vector to find intersection of pegs
@@ -188,31 +190,51 @@ def get_candidate_pegs(input_pegs, cover_pegs):
     return candidates
 
 
-def get_matches(target_pegs: Dict[chr, Dict[int, Dict[int, int]]], candidate_pegs):
+def get_matches(target_pegs, candidate_pegs):
     """
     Searches through candidate pegs to match targets
 
-    TODO: Target pegs can be identical, so store results of previous
-     searches and check whether the target peg has already been searched for
-
+    :param candidate_pegs:
     :param target_pegs:
-    :return :
+    :return:
     """
+    match_sets = dict()
+    match_transforms = dict()
+    for p_targ in target_pegs:
+        for p_cand in candidate_pegs:
+            transform = check_match(p_targ, p_cand)
+            if transform:
+                nodes = target_pegs[p_targ]
+                for n in nodes:
+                    # update sets
+                    node_set = match_sets.get(n, set())
+                    node_set.add(p_cand)
+                    match_sets.update({n: node_set})
+                    # update transforms
+                    node_matches = match_transforms.get(n, dict())
+                    node_matches.update({p_cand: transform})
+                    match_transforms.update({n: node_matches})
 
-    print(target_pegs)
-    print(candidate_pegs)
-    target_labels = dict()
-    i = 0
-    for node in target_pegs:
-        for tp in target_pegs[node]:
-            result = target_labels.get(i, {})
-            if not result:
-                target_labels[i] = tp
-                i += 1
+    return match_sets, match_transforms
 
 
-
-    return None, None
+def check_match(p_targ: Dict[int, Dict[int, float]], p_cand: int):
+    # Simplest method is to try each combination of transforms
+    p_cand = utils.get_piece(p_cand)
+    for transform_r in range(4):
+        for transform_f in range(2):
+            match = True
+            for side in p_targ:
+                for depth in p_targ[side]:
+                    r_t, f_t = apply_transform((side, depth), transform_r, transform_f)
+                    if p_cand[r_t][f_t] != p_targ[side][depth]:
+                        match = False
+                        break
+                if not match:
+                    break
+            if match:
+                return transform_r, transform_f
+    return False
 
 
 if __name__ == '__main__':
